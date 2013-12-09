@@ -9,10 +9,6 @@ module YuiSearch
       @database = Groonga::Database.open('db/data.groonga')
     end
 
-    get '/' do
-      redirect 'http://yui-search.com/'
-    end
-
     get '/search' do
       response.headers['Access-Control-Allow-Origin'] = '*'
       query = params['q'] || ''
