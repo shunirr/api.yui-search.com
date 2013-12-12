@@ -5,7 +5,7 @@ require 'nokogiri'
 require 'groonga'
 require 'date'
 
-PATH = './db/data.groonga'
+PATH = './db2/data.groonga'
 
 if File.exist?(PATH)
   @database = Groonga::Database.open(PATH)
@@ -60,7 +60,13 @@ Dir.glob('./html/*.html').each do |html|
   d = doc.xpath('//span[@class="date"]').text.split(/[-年月日]/).map {|a| a.to_i }
   date = Date.new(d[0], d[1], d[2])
   image_node = content.xpath('//img[@border]')
-  image = image_node.first[:src] if image_node.size > 0
+  image = nil
+  image_node.each do |i|
+    if i[:src].include? 'jpg'
+      image = i[:src]
+      break
+    end
+  end
   start = false
   children = []
   content.children.each do |child|
