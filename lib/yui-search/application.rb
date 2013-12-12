@@ -32,9 +32,11 @@ module YuiSearch
         end
       end.each do |entry|
         entries << {
-          :permalink => entry.key['permalink'],
-          :title     => entry.key['title'],
-          :snippets  => snippet.execute(entry.key['body']).join
+          :permalink  => entry.key['permalink'],
+          :title      => entry.key['title'],
+          :thumbnail  => entry.key['image'],
+          :created_at => entry.key['created_at'],
+          :snippets   => snippet.execute(entry.key['body']).join,
         }
         break if entries.size > count
       end
