@@ -29,7 +29,7 @@ end
 
 Dir.glob('./html/*.html').each do |html|
   doc = Nokogiri::HTML.parse(open(html).read)
-  title = doc.xpath('//h3[@class="title"]').text.gsub("\n", '')
+  title = doc.xpath('//h3[@class="title"]').first.text.gsub("\n", '')
   permalink = doc.xpath('//h3[@class="title"]/a').first[:href]
   content = doc.xpath('//div[@class="subContentsInner"]')
   start = false
