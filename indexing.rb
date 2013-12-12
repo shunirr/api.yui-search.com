@@ -3,6 +3,7 @@
 
 require 'nokogiri'
 require 'groonga'
+require 'date'
 
 PATH = './db/data.groonga'
 
@@ -11,10 +12,19 @@ if File.exist?(PATH)
 else
   @database = Groonga::Database.create(:path => PATH)
   Groonga::Schema.define do |schema|  
+    schema.create_table("Sites",
+                        :type => :hash, 
+                        :key_type => "ShortText") do |table|
+      table.text("title")
+    end
+
     schema.create_table("Entries", :type => :array) do |table|
       table.text("permalink")
       table.text("title")
       table.text("body")
+      table.text("image")
+      table.time("created_at")
+      table.reference("site", "Sites")
     end
 
     schema.create_table("Terms",
@@ -23,15 +33,34 @@ else
                         :default_tokenizer => "TokenBigram",
                         :key_normalize => true) do |table|
       table.index("Entries.body")
+      table.index("Sites._key")  
     end
   end
 end  
 
+def find_site_or_insert(permalink, title)
+  site = Groonga['Sites'][permalink]
+  if site.nil?
+    Groonga['Sites'][permalink] = { 'title' => title }
+  end
+  Groonga['Sites'][permalink]
+end
+
+def add_entry(entry)
+  Groonga['Entries'].add entry
+end
+
 Dir.glob('./html/*.html').each do |html|
   doc = Nokogiri::HTML.parse(open(html).read)
+  site_title = doc.xpath('//title').text.split('｜')[1]
+  site_permalink = doc.xpath('//h1/a').first[:href]
   title = doc.xpath('//h3[@class="title"]').first.text.gsub("\n", '')
   permalink = doc.xpath('//h3[@class="title"]/a').first[:href]
   content = doc.xpath('//div[@class="subContentsInner"]')
+  d = doc.xpath('//span[@class="date"]').text.split(/[-年月日]/).map {|a| a.to_i }
+  date = Date.new(d[0], d[1], d[2])
+  image_node = content.xpath('//img[@border]')
+  image = image_node.first[:src] if image_node.size > 0
   start = false
   children = []
   content.children.each do |child|
@@ -47,11 +76,16 @@ Dir.glob('./html/*.html').each do |html|
       end
     end
   end
-  Groonga['Entries'].add({
+  site = find_site_or_insert(site_permalink, site_title)
+  entry = {
     'permalink' => permalink,
     'title' => title,
-    'body' => "#{title} #{children.join}"
-  })
+    'image' => image,
+    'body' => "#{title} #{children.join}",
+    'site' => site,
+    'created_at' => date.to_time.to_i
+  }
+  add_entry entry
   puts "add #{title}"
 end
 
