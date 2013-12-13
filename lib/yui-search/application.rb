@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 require 'groonga'
+require 'digest/md5'
 
 module YuiSearch
   class Application < Sinatra::Base
@@ -22,21 +23,26 @@ module YuiSearch
         :html_escape       => true,
         :normalize         => true,
       )
-      query.split.each do |word|
+      queries.each do |word|
         snippet.add_keyword(word)
       end
 
       Groonga['Entries'].select do |record|
+        target = record.match_target do |match_record|
+          (match_record['title'] * 100) | (match_record['body'] * 10) | match_record['permalink']
+        end
         queries.map do |q|
-          record.body =~ q
+          target =~ q
         end
       end.each do |entry|
+        image = entry.key['image']
+        thumbnail = "http://static.s5r.jp/images/#{Digest::MD5.hexdigest(image)}.jpg" if image and image.include? 'jpg'
         entries << {
           :permalink  => entry.key['permalink'],
           :title      => entry.key['title'],
-          :thumbnail  => entry.key['image'],
+          :thumbnail  => thumbnail,
           :created_at => entry.key['created_at'],
-          :snippets   => snippet.execute(entry.key['body']).join,
+          :snippets   => snippet.execute(entry.key['body']).join('<br />'),
         }
         break if entries.size > count
       end
