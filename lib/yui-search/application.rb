@@ -12,12 +12,17 @@ module YuiSearch
 
     get '/search' do
       response.headers['Access-Control-Allow-Origin'] = '*'
-      query = params['q'] || ''
+      query = params['q']     || ''
+      page  = (params['page']  || '1').to_i
+      count = (params['count'] || '10').to_i
+
+      page  = 1  if page <= 0
+      count = 10 if count <= 0
+
       queries = query.split(' ')
-      count = params['count'] || 100
-      entries = []
+
       snippet = Groonga::Snippet.new(
-        :width             => 100,
+        :width             => 200,
         :default_open_tag  => "<span class=\"keyword\">",
         :default_close_tag => "</span>",
         :html_escape       => true,
@@ -27,24 +32,34 @@ module YuiSearch
         snippet.add_keyword(word)
       end
 
-      Groonga['Entries'].select do |record|
+      selected_entries = Groonga['Entries'].select do |record|
         target = record.match_target do |match_record|
-          (match_record['title'] * 100) | (match_record['body'] * 10) | match_record['permalink']
+          (match_record['title'] * 100) | match_record['body']
         end
         queries.map do |q|
           target =~ q
         end
-      end.each do |entry|
-        image = entry.key['image']
-        thumbnail = "http://static.s5r.jp/images/#{Digest::MD5.hexdigest(image)}.jpg" if image and image.include? 'jpg'
-        entries << {
-          :permalink  => entry.key['permalink'],
-          :title      => entry.key['title'],
-          :thumbnail  => thumbnail,
-          :created_at => entry.key['created_at'],
-          :snippets   => snippet.execute(entry.key['body']).join('<br />'),
-        }
-        break if entries.size > count
+      end
+      
+      entries = []
+      if (page - 1) * count < selected_entries.size then
+        pagenated_entries = selected_entries.paginate(
+            [["_score", :desc]],
+            :page => page,
+            :size => count)
+        pagenated_entries.each do |entry|
+          image = entry.image
+          if image and image.include? 'jpg' then
+            thumbnail = "http://static.s5r.jp/images/#{Digest::MD5.hexdigest(image)}.jpg"
+          end
+          entries << {
+            :permalink  => entry.permalink,
+            :title      => entry.title,
+            :thumbnail  => thumbnail,
+            :created_at => entry.created_at,
+            :snippets   => snippet.execute(entry.body).join('<br />'),
+          }
+        end
       end
 
       json entries
