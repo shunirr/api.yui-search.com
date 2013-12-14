@@ -12,8 +12,8 @@ module YuiSearch
 
     get '/search' do
       response.headers['Access-Control-Allow-Origin'] = '*'
-      query = params['q']     || ''
-      page  = (params['page']  || '1').to_i
+      query = params['q'] || ''
+      page  = (params['page']  || '1' ).to_i
       count = (params['count'] || '10').to_i
 
       page  = 1  if page <= 0
@@ -41,13 +41,17 @@ module YuiSearch
         end
       end
       
-      entries = []
+      result = {}
       if (page - 1) * count < selected_entries.size then
-        pagenated_entries = selected_entries.paginate(
+        entries = []
+        paginated_entries = selected_entries.paginate(
             [["_score", :desc]],
             :page => page,
             :size => count)
-        pagenated_entries.each do |entry|
+
+        result['total_page_count'] = paginated_entries.n_pages
+
+        paginated_entries.each do |entry|
           image = entry.image
           if image and image.include? 'jpg' then
             thumbnail = "http://static.s5r.jp/images/#{Digest::MD5.hexdigest(image)}.jpg"
@@ -60,9 +64,11 @@ module YuiSearch
             :snippets   => snippet.execute(entry.body).join('<br />'),
           }
         end
+
+        result['entries'] = entries
       end
 
-      json entries
+      json result
     end
   end
 end
