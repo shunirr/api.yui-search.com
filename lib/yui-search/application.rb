@@ -2,6 +2,7 @@
 
 require 'groonga'
 require 'digest/md5'
+require 'sewell'
 
 module YuiSearch
   class Application < Sinatra::Base
@@ -19,8 +20,6 @@ module YuiSearch
       page  = 1  if page <= 0
       count = 10 if count <= 0
 
-      queries = query.split(' ')
-
       snippet = Groonga::Snippet.new(
         :width             => 200,
         :default_open_tag  => "<span class=\"keyword\">",
@@ -28,19 +27,14 @@ module YuiSearch
         :html_escape       => true,
         :normalize         => true,
       )
-      queries.each do |word|
+      query.split(' ').each do |word|
         snippet.add_keyword(word)
       end
-
-      selected_entries = Groonga['Entries'].select do |record|
-        target = record.match_target do |match_record|
-          (match_record['title'] * 100) | match_record['body']
-        end
-        queries.map do |q|
-          target =~ q
-        end
-      end
       
+      selected_entries = Groonga['Entries'].select(
+          Sewell.generate(query, %w{title body})
+      )
+
       result = {}
       if (page - 1) * count < selected_entries.size then
         entries = []

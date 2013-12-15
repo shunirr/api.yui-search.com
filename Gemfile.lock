@@ -28,6 +28,7 @@ GEM
       groonga-client (>= 0.0.3)
       json
       pkg-config
+    sewell (0.1.3)
     sinatra (1.4.4)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -50,5 +51,6 @@ DEPENDENCIES
   pit
   rack
   rroonga
+  sewell
   sinatra
   sinatra-contrib
