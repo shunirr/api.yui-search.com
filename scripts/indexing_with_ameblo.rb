@@ -5,12 +5,17 @@ require 'nokogiri'
 require 'groonga'
 require 'date'
 
-PATH = './db/data.groonga'
+dbpath  = ARGV.shift
+htmldir = ARGV.shift
+if dbpath.nil? or htmldir.nil?
+  puts "usage: #{$PROGRAM_NAME} [DB_PATH] [SOURCE_HTML_DIR]"
+  exit 0
+end
 
-if File.exist?(PATH)
-  @database = Groonga::Database.open(PATH)
+if File.exist?(dbpath)
+  @database = Groonga::Database.open(dbpath)
 else
-  @database = Groonga::Database.create(:path => PATH)
+  @database = Groonga::Database.create(:path => dbpath)
   Groonga::Schema.define do |schema|  
     schema.create_table("Sites",
                         :type => :hash, 
@@ -50,7 +55,7 @@ def add_entry(entry)
   Groonga['Entries'].add entry
 end
 
-Dir.glob('./html/*.html').each do |html|
+Dir.glob("#{htmldir}/*.html").each do |html|
   doc = Nokogiri::HTML.parse(open(html).read)
   site_title = doc.xpath('//title').text.split('｜')[1]
   site_permalink = doc.xpath('//h1/a').first[:href]
