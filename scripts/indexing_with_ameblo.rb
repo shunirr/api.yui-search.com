@@ -5,7 +5,7 @@ require 'nokogiri'
 require 'groonga'
 require 'date'
 
-PATH = './db2/data.groonga'
+PATH = './db/data.groonga'
 
 if File.exist?(PATH)
   @database = Groonga::Database.open(PATH)
