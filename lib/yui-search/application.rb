@@ -44,19 +44,27 @@ module YuiSearch
             :size => count)
 
         result['total_page_count'] = paginated_entries.n_pages
+        result['total_count']      = selected_entries.size
 
         paginated_entries.each do |entry|
           image = entry.image
           if image and image.include? 'jpg' then
             thumbnail = "http://static.s5r.jp/images/#{Digest::MD5.hexdigest(image)}.jpg"
           end
-          entries << {
-            :permalink  => entry.permalink,
-            :title      => entry.title,
-            :thumbnail  => thumbnail,
-            :created_at => entry.created_at,
-            :snippets   => snippet.execute(entry.body).join('<br />'),
-          }
+
+          snippets = ""
+          if entry.site == Groonga['Sites']['http://www.kasi-time.com']
+            result['info'] = entry.title
+          else
+            snippets = snippet.execute(entry.body).join('<br />')
+            entries << {
+              :permalink  => entry.permalink,
+              :title      => entry.title,
+              :thumbnail  => thumbnail,
+              :created_at => entry.created_at,
+              :snippets   => snippets
+            }
+          end
         end
 
         result['entries'] = entries

@@ -1,0 +1,9 @@
+#!/bin/sh
+PID="pidfile"
+if [ -f $PID ]; then
+  kill `cat $PID`
+  rm $PID
+fi
+bundle exec rackup --port 9091 \
+  >log.txt 2>&1 &
+echo $! >$PID
