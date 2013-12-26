@@ -55,6 +55,7 @@ module YuiSearch
           snippets = ""
           if entry.site == Groonga['Sites']['http://www.kasi-time.com']
             result['info'] = entry.title
+            result['total_count'] -= 1
           else
             snippets = snippet.execute(entry.body).join('<br />')
             entries << {
